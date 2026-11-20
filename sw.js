@@ -1,5 +1,5 @@
 // Service worker : l'app s'ouvre même sans réseau (l'IA, elle, a besoin d'Internet).
-const VERSION = "clipou-v1";
+const VERSION = "clipou-v2";
 const SHELL = [
   "./",
   "index.html",
