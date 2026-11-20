@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#17132B" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Clipou" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Clipou Studio</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Verrou PIN -->
+  <section id="lock" class="lock hidden" aria-label="Verrouillage">
+    <div class="lock-card">
+      <div class="logo-big">🎬</div>
+      <h1>Clipou Studio</h1>
+      <p>Entre ton code</p>
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
+      <button id="pinBtn" class="btn primary">Déverrouiller</button>
+      <p id="pinError" class="error"></p>
+    </div>
+  </section>
+
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-logo">🎬</span> Clipou <b>Studio</b></div>
+      <div id="keyBadge" class="badge">Clé API ?</div>
+    </header>
+
+    <main>
+      <!-- CRÉER -->
+      <section id="view-create" class="view active">
+        <h2 class="hello">Quelle vidéo on crée aujourd'hui&nbsp;? ✨</h2>
+        <div class="card">
+          <label class="label" for="prompt">Ton idée</label>
+          <textarea id="prompt" rows="4" placeholder="Ex : Un petit lapin apprend à compter jusqu'à 5 avec des carottes dans un jardin ensoleillé"></textarea>
+          <div class="row gap">
+            <button id="ideasBtn" class="btn ghost small">💡 Idées de l'IA</button>
+            <button id="clearPrompt" class="btn ghost small">Effacer</button>
+          </div>
+          <div id="ideas" class="ideas"></div>
+        </div>
+
+        <div class="card">
+          <span class="label">Âge</span>
+          <div class="chips" data-group="age"></div>
+          <span class="label">Durée</span>
+          <div class="chips" data-group="duration"></div>
+          <span class="label">Style</span>
+          <div class="chips" data-group="style"></div>
+          <span class="label">Langue</span>
+          <div class="chips" data-group="lang"></div>
+        </div>
+
+        <button id="generateBtn" class="btn primary big">✨ Créer ma vidéo</button>
+        <button id="blankBtn" class="btn ghost full">Commencer sans IA (montage vierge)</button>
+      </section>
+
+      <!-- PROJETS -->
+      <section id="view-projects" class="view">
+        <h2>Mes vidéos</h2>
+        <div id="projectList" class="project-list"></div>
+      </section>
+
+      <!-- RÉGLAGES -->
+      <section id="view-settings" class="view">
+        <h2>Réglages</h2>
+        <div class="card">
+          <label class="label" for="apiKey">Clé API Claude (Anthropic)</label>
+          <div class="row">
+            <input id="apiKey" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+            <button id="toggleKey" class="btn ghost icon" aria-label="Afficher la clé">👁️</button>
+          </div>
+          <p class="hint">🔒 La clé est stockée uniquement sur ce téléphone et envoyée directement à api.anthropic.com.</p>
+          <label class="label" for="model">Modèle IA</label>
+          <select id="model"></select>
+          <div class="row gap">
+            <button id="saveKey" class="btn primary small">Enregistrer</button>
+            <button id="testKey" class="btn ghost small">Tester la connexion</button>
+          </div>
+          <p id="keyStatus" class="hint"></p>
+        </div>
+
+        <div class="card">
+          <label class="label" for="channelName">Nom de ta chaîne (filigrane)</label>
+          <input id="channelName" type="text" placeholder="@MaChaineKids" />
+          <label class="label" for="quality">Qualité d'export</label>
+          <select id="quality">
+            <option value="720">720 × 1280 (rapide, conseillé)</option>
+            <option value="1080">1080 × 1920 (Full HD)</option>
+          </select>
+          <label class="switch"><input id="ttsPreview" type="checkbox" /> <span>Lire la narration (voix de synthèse) pendant l'aperçu</span></label>
+        </div>
+
+        <div class="card">
+          <span class="label">Code de verrouillage</span>
+          <p class="hint">Pour que l'app reste rien qu'à toi.</p>
+          <div class="row gap">
+            <input id="newPin" type="password" inputmode="numeric" maxlength="8" placeholder="4 à 8 chiffres" />
+            <button id="setPin" class="btn ghost small">Définir</button>
+          </div>
+          <button id="removePin" class="btn ghost small">Retirer le code</button>
+        </div>
+
+        <div class="card">
+          <span class="label">Installer sur le téléphone</span>
+          <p class="hint"><b>iPhone</b> : Safari → bouton Partager → « Sur l'écran d'accueil ».<br /><b>Android</b> : Chrome → menu ⋮ → « Installer l'application ».</p>
+          <button id="installBtn" class="btn ghost small hidden">📲 Installer maintenant</button>
+        </div>
+
+        <div class="card danger">
+          <button id="wipeAll" class="btn danger small">Effacer toutes mes données</button>
+        </div>
+        <p class="hint center">Clipou Studio · usage personnel</p>
+      </section>
+    </main>
+
+    <nav class="tabbar">
+      <button data-view="create" class="active"><span>✨</span>Créer</button>
+      <button data-view="projects"><span>🎞️</span>Mes vidéos</button>
+      <button data-view="settings"><span>⚙️</span>Réglages</button>
+    </nav>
+  </div>
+
+  <!-- ÉDITEUR / MONTAGE -->
+  <section id="editor" class="editor hidden" aria-label="Montage">
+    <header class="ed-top">
+      <button id="edBack" class="btn ghost icon" aria-label="Retour">←</button>
+      <input id="edTitle" class="ed-title" type="text" />
+      <button id="edUndo" class="btn ghost icon" aria-label="Annuler">↶</button>
+      <button id="edExport" class="btn primary small">Exporter</button>
+    </header>
+
+    <div class="stage-wrap">
+      <div class="stage">
+        <canvas id="stage" width="540" height="960"></canvas>
+        <div id="dragHint" class="drag-hint">Touche l'image pour lire · glisse les persos pour les placer</div>
+      </div>
+      <div class="transport">
+        <button id="playBtn" class="play" aria-label="Lecture">▶</button>
+        <span id="timeLabel">0:00</span>
+        <input id="scrub" type="range" min="0" max="1000" value="0" />
+        <span id="totalLabel">0:00</span>
+        <button id="safeBtn" class="btn ghost tiny" title="Zone sûre TikTok">▦</button>
+      </div>
+    </div>
+
+    <div class="timeline-wrap">
+      <div id="timeline" class="timeline"></div>
+    </div>
+
+    <nav class="ed-tabs">
+      <button data-panel="scene" class="active">🎬 Scène</button>
+      <button data-panel="cast">🐰 Persos</button>
+      <button data-panel="sound">🎵 Son</button>
+      <button data-panel="ai">🤖 IA</button>
+      <button data-panel="publish">🚀 Publier</button>
+    </nav>
+
+    <div class="panels">
+      <!-- Scène -->
+      <div class="panel active" data-panel="scene">
+        <label class="label" for="fCaption">Texte à l'écran</label>
+        <input id="fCaption" type="text" />
+        <label class="label" for="fNarration">Narration</label>
+        <textarea id="fNarration" rows="3"></textarea>
+        <div class="row gap wrap">
+          <button id="ttsBtn" class="btn ghost small">🔊 Écouter</button>
+          <button id="recBtn" class="btn ghost small">🎙️ Enregistrer ma voix</button>
+          <button id="voicePlay" class="btn ghost small hidden">▶ Ma voix</button>
+          <button id="voiceDel" class="btn ghost small hidden">🗑 Voix</button>
+        </div>
+        <label class="label">Durée : <b id="durLabel">4 s</b></label>
+        <input id="fDuration" type="range" min="1.5" max="12" step="0.5" />
+        <div class="grid2">
+          <div><label class="label" for="fTextStyle">Style du texte</label><select id="fTextStyle"></select></div>
+          <div><label class="label" for="fDecor">Décor</label><select id="fDecor"></select></div>
+          <div><label class="label" for="fEffect">Effet</label><select id="fEffect"></select></div>
+          <div><label class="label" for="fCamera">Caméra</label><select id="fCamera"></select></div>
+          <div><label class="label" for="fTransition">Transition d'entrée</label><select id="fTransition"></select></div>
+          <div>
+            <label class="label">Fond</label>
+            <div class="row gap"><input id="fBgTop" type="color" /><input id="fBgBottom" type="color" /></div>
+          </div>
+        </div>
+        <div id="palettes" class="palettes"></div>
+        <div class="row gap wrap scene-actions">
+          <button id="sLeft" class="btn ghost small">◀ Déplacer</button>
+          <button id="sRight" class="btn ghost small">Déplacer ▶</button>
+          <button id="sDup" class="btn ghost small">⧉ Dupliquer</button>
+          <button id="sDel" class="btn danger small">Supprimer</button>
+        </div>
+      </div>
+
+      <!-- Personnages -->
+      <div class="panel" data-panel="cast">
+        <p class="hint">Astuce : mets la vidéo en pause et fais glisser les personnages directement sur l'image.</p>
+        <div id="castList" class="cast-list"></div>
+        <span class="label">Ajouter</span>
+        <div id="emojiPicker" class="emoji-picker"></div>
+        <div class="row gap">
+          <input id="customEmoji" type="text" placeholder="Autre emoji…" maxlength="8" />
+          <button id="addEmoji" class="btn ghost small">Ajouter</button>
+        </div>
+      </div>
+
+      <!-- Son -->
+      <div class="panel" data-panel="sound">
+        <label class="switch"><input id="musicOn" type="checkbox" /> <span>Musique générée</span></label>
+        <span class="label">Ambiance</span>
+        <div id="moodChips" class="chips"></div>
+        <label class="label">Tempo : <b id="tempoLabel">110</b> BPM</label>
+        <input id="tempo" type="range" min="70" max="140" step="1" />
+        <label class="label">Volume musique</label>
+        <input id="musicVol" type="range" min="0" max="1" step="0.05" />
+        <label class="label">Volume voix</label>
+        <input id="voiceVol" type="range" min="0" max="1.5" step="0.05" />
+        <p class="hint">🎙️ Enregistre ta voix scène par scène (onglet Scène) : elle sera mixée dans la vidéo exportée, la musique baisse automatiquement pendant que tu parles. La voix de synthèse sert seulement à l'aperçu (tu peux aussi utiliser la « synthèse vocale » de TikTok/CapCut sur le texte).</p>
+      </div>
+
+      <!-- IA -->
+      <div class="panel" data-panel="ai">
+        <span class="label">Que doit changer l'IA ?</span>
+        <div class="seg" id="aiScope">
+          <button data-scope="all" class="active">Toute la vidéo</button>
+          <button data-scope="scene">Scène sélectionnée</button>
+        </div>
+        <textarea id="aiInstruction" rows="3" placeholder="Ex : Rends la fin plus drôle et ajoute un quiz « Combien de carottes ? »"></textarea>
+        <div id="aiSuggestions" class="chips"></div>
+        <button id="aiApply" class="btn primary full">🤖 Appliquer avec l'IA</button>
+        <p class="hint">Tu peux toujours revenir en arrière avec ↶.</p>
+      </div>
+
+      <!-- Publier -->
+      <div class="panel" data-panel="publish">
+        <label class="label" for="pTitle">Titre</label>
+        <div class="row"><input id="pTitle" type="text" /><button class="btn ghost icon copy" data-copy="pTitle">📋</button></div>
+        <label class="label" for="pDesc">Description</label>
+        <div class="row"><textarea id="pDesc" rows="3"></textarea><button class="btn ghost icon copy" data-copy="pDesc">📋</button></div>
+        <label class="label" for="pTags">Hashtags</label>
+        <div class="row"><input id="pTags" type="text" /><button class="btn ghost icon copy" data-copy="pTags">📋</button></div>
+        <button id="copyAll" class="btn ghost small">📋 Tout copier</button>
+        <div class="checklist">
+          <p><b>Avant de publier :</b></p>
+          <label><input type="checkbox" /> YouTube : choisir « Oui, elle est conçue pour les enfants » (obligatoire, loi COPPA)</label>
+          <label><input type="checkbox" /> TikTok : vérifier que le texte n'est pas caché par l'interface (bouton ▦)</label>
+          <label><input type="checkbox" /> Revoir la vidéo en entier avant de la poster</label>
+          <label><input type="checkbox" /> Activer le label « contenu généré par IA » si la plateforme le demande</label>
+        </div>
+        <button id="exportBtn2" class="btn primary full">🎞️ Exporter la vidéo</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chargement IA -->
+  <div id="loading" class="overlay hidden">
+    <div class="loader-card">
+      <div class="loader-emoji" id="loaderEmoji">🐰</div>
+      <p id="loaderText">L'IA écrit le scénario…</p>
+      <div class="bar"><div id="loaderBar"></div></div>
+      <p class="hint" id="loaderSub"></p>
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div id="exportModal" class="overlay hidden">
+    <div class="export-card">
+      <h3 id="exportTitle">Export en cours…</h3>
+      <p class="hint" id="exportHint">Garde l'écran allumé et l'app ouverte pendant l'export (temps réel).</p>
+      <div class="bar"><div id="exportBar"></div></div>
+      <video id="exportVideo" class="hidden" controls playsinline></video>
+      <div class="row gap wrap center">
+        <a id="downloadLink" class="btn primary small hidden" download>⬇️ Télécharger</a>
+        <button id="shareBtn" class="btn primary small hidden">📤 Partager</button>
+        <button id="exportClose" class="btn ghost small">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
