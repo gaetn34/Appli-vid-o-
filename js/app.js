@@ -1,5 +1,6 @@
 import { Settings, Projects, VoiceStore, uid, sha256 } from "./storage.js";
 import * as AI from "./ai.js";
+import { localStoryboard, LOCAL_IDEAS, localEdit, LOCAL_EDIT_HELP } from "./localgen.js";
 import { drawFrame, drawThumb, totalDuration, sceneStarts, sceneAt, characterBase, W, H } from "./renderer.js";
 import { Mixer, audioCtx, decodeBlob } from "./audio.js";
 import {
@@ -109,7 +110,7 @@ function showView(name) {
 function updateKeyBadge() {
   const ok = !!state.settings.apiKey;
   const b = $("#keyBadge");
-  b.textContent = ok ? "IA connectée ✓" : "Ajouter la clé API";
+  b.textContent = ok ? "IA Claude ✓" : "Mode sans IA";
   b.classList.toggle("ok", ok);
 }
 
@@ -136,16 +137,24 @@ function renderChips() {
   }
 }
 
-function needKey() {
-  if (state.settings.apiKey) return false;
-  toast("Ajoute d'abord ta clé API dans Réglages 🔑");
-  showView("settings");
-  setTimeout(() => $("#apiKey").focus(), 200);
-  return true;
+function showIdeas(ideas) {
+  $("#ideas").innerHTML = ideas
+    .map((i, n) => `<button class="idea" data-n="${n}"><span class="e">${esc(i.emoji)}</span><span><b>${esc(i.title)}</b><small>${esc(i.prompt)}</small></span></button>`)
+    .join("");
+  $("#ideas").onclick = (e) => {
+    const b = e.target.closest(".idea");
+    if (!b) return;
+    $("#prompt").value = ideas[+b.dataset.n].prompt;
+    $("#ideas").innerHTML = "";
+    $("#prompt").scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 }
 
 async function onIdeas() {
-  if (needKey()) return;
+  if (!state.settings.apiKey) {
+    showIdeas([...LOCAL_IDEAS].sort(() => Math.random() - 0.5).slice(0, 5));
+    return;
+  }
   const btn = $("#ideasBtn");
   btn.disabled = true;
   btn.textContent = "💡 Je réfléchis…";
@@ -157,21 +166,12 @@ async function onIdeas() {
       lang: state.create.lang,
       theme: $("#prompt").value.trim(),
     });
-    $("#ideas").innerHTML = ideas
-      .map((i, n) => `<button class="idea" data-n="${n}"><span class="e">${esc(i.emoji)}</span><span><b>${esc(i.title)}</b><small>${esc(i.prompt)}</small></span></button>`)
-      .join("");
-    $("#ideas").onclick = (e) => {
-      const b = e.target.closest(".idea");
-      if (!b) return;
-      $("#prompt").value = ideas[+b.dataset.n].prompt;
-      $("#ideas").innerHTML = "";
-      $("#prompt").scrollIntoView({ behavior: "smooth", block: "center" });
-    };
+    showIdeas(ideas);
   } catch (err) {
     toast(err.message, 4000);
   } finally {
     btn.disabled = false;
-    btn.textContent = "💡 Idées de l'IA";
+    btn.textContent = "💡 Idées";
   }
 }
 
@@ -199,10 +199,23 @@ async function onGenerate() {
     $("#prompt").focus();
     return;
   }
-  if (needKey()) return;
   audioCtx().resume?.(); // débloque l'audio sur iOS pendant le geste utilisateur
-  showLoading(true, `${AGES[state.create.age]} · ${state.create.duration} s`);
+  const useAI = !!state.settings.apiKey;
+  showLoading(true, `${AGES[state.create.age]} · ${state.create.duration} s${useAI ? "" : " · mode sans IA"}`);
   try {
+    if (!useAI) {
+      for (let k = 1; k <= 6; k++) {
+        await new Promise((r) => setTimeout(r, 220));
+        loadingProgress(k, 6);
+      }
+      const sb = localStoryboard({ prompt, ...state.create });
+      const p = newProject(sb, { prompt, ...state.create });
+      Projects.save(p);
+      showLoading(false);
+      openEditor(p);
+      toast("Vidéo créée sans IA ✨ Appuie sur ▶");
+      return;
+    }
     const sb = await AI.generateStoryboard({
       apiKey: state.settings.apiKey,
       model: state.settings.model,
@@ -845,9 +858,21 @@ function initAIPanel() {
 
 async function onAIApply() {
   const instruction = $("#aiInstruction").value.trim();
-  if (!instruction) return toast("Dis à l'IA ce qu'elle doit changer ✍️");
-  if (needKey()) return;
+  if (!instruction) return toast("Dis ce qu'il faut changer ✍️");
   pause();
+  if (!state.settings.apiKey) {
+    const snap = JSON.stringify(state.project);
+    const ok = localEdit(state.project, instruction, state.aiScope === "scene" ? state.sel : null);
+    if (!ok) return toast(LOCAL_EDIT_HELP, 6000);
+    pushHistory(snap);
+    state.project.scenes.forEach((s) => (s.id ||= uid("s")));
+    state.sel = Math.min(state.sel, state.project.scenes.length - 1);
+    refreshAll();
+    persist();
+    $("#aiInstruction").value = "";
+    toast("Modification appliquée ✨ (↶ pour annuler)");
+    return;
+  }
   const p = state.project;
   const scope = state.aiScope;
   showLoading(true, scope === "all" ? "Retouche de toute la vidéo" : `Retouche de la scène ${state.sel + 1}`);

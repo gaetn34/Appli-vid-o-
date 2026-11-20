@@ -45,7 +45,7 @@
           <label class="label" for="prompt">Ton idée</label>
           <textarea id="prompt" rows="4" placeholder="Ex : Un petit lapin apprend à compter jusqu'à 5 avec des carottes dans un jardin ensoleillé"></textarea>
           <div class="row gap">
-            <button id="ideasBtn" class="btn ghost small">💡 Idées de l'IA</button>
+            <button id="ideasBtn" class="btn ghost small">💡 Idées</button>
             <button id="clearPrompt" class="btn ghost small">Effacer</button>
           </div>
           <div id="ideas" class="ideas"></div>
@@ -76,12 +76,12 @@
       <section id="view-settings" class="view">
         <h2>Réglages</h2>
         <div class="card">
-          <label class="label" for="apiKey">Clé API Claude (Anthropic)</label>
+          <label class="label" for="apiKey">Clé API Claude (facultatif)</label>
           <div class="row">
             <input id="apiKey" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
             <button id="toggleKey" class="btn ghost icon" aria-label="Afficher la clé">👁️</button>
           </div>
-          <p class="hint">🔒 La clé est stockée uniquement sur ce téléphone et envoyée directement à api.anthropic.com.</p>
+          <p class="hint">Sans clé, l'appli marche en <b>mode sans IA</b> (vidéos créées à partir des mots de ton idée). Avec ta clé, c'est Claude qui écrit tout. 🔒 La clé reste uniquement sur ce téléphone.</p>
           <label class="label" for="model">Modèle IA</label>
           <select id="model"></select>
           <div class="row gap">
